@@ -1,0 +1,134 @@
+version: "3.9"
+
+services:
+  # =========================
+  # Blockchain Node A
+  # =========================
+  blockchain-node-a:
+    build: ./blockchain-service
+    container_name: blockchain-node-a
+    ports:
+      - "4101:4006"
+    environment:
+      - NODE_ID=node-a
+      - PORT=4006
+      - PEERS=http://blockchain-node-b:4006,http://blockchain-node-c:4006
+      - DATABASE_URL=postgres://postgres:password@blockchain-db-a:5432/blockchain
+    depends_on:
+      - blockchain-db-a
+    networks:
+      - cinema-net
+
+  # =========================
+  # Blockchain Node B
+  # =========================
+  blockchain-node-b:
+    build: ./blockchain-service
+    container_name: blockchain-node-b
+    ports:
+      - "4102:4006"
+    environment:
+      - NODE_ID=node-b
+      - PORT=4006
+      - PEERS=http://blockchain-node-a:4006,http://blockchain-node-c:4006
+      - DATABASE_URL=postgres://postgres:password@blockchain-db-b:5432/blockchain
+    depends_on:
+      - blockchain-db-b
+    networks:
+      - cinema-net
+
+  # =========================
+  # Blockchain Node C
+  # =========================
+  blockchain-node-c:
+    build: ./blockchain-service
+    container_name: blockchain-node-c
+    ports:
+      - "4103:4006"
+    environment:
+      - NODE_ID=node-c
+      - PORT=4006
+      - PEERS=http://blockchain-node-a:4006,http://blockchain-node-b:4006
+      - DATABASE_URL=postgres://postgres:password@blockchain-db-c:5432/blockchain
+    depends_on:
+      - blockchain-db-c
+    networks:
+      - cinema-net
+
+  # =========================
+  # Database for Node A
+  # =========================
+  blockchain-db-a:
+    image: postgres:15
+    container_name: blockchain-db-a
+    environment:
+      POSTGRES_PASSWORD: password
+      POSTGRES_USER: postgres
+      POSTGRES_DB: blockchain
+    ports:
+      - "5437:5432"
+    networks:
+      - cinema-net
+    volumes:
+      - blockchain-data-a:/var/lib/postgresql/data
+
+  # =========================
+  # Database for Node B
+  # =========================
+  blockchain-db-b:
+    image: postgres:15
+    container_name: blockchain-db-b
+    environment:
+      POSTGRES_PASSWORD: password
+      POSTGRES_USER: postgres
+      POSTGRES_DB: blockchain
+    ports:
+      - "5438:5432"
+    networks:
+      - cinema-net
+    volumes:
+      - blockchain-data-b:/var/lib/postgresql/data
+
+  # =========================
+  # Database for Node C
+  # =========================
+  blockchain-db-c:
+    image: postgres:15
+    container_name: blockchain-db-c
+    environment:
+      POSTGRES_PASSWORD: password
+      POSTGRES_USER: postgres
+      POSTGRES_DB: blockchain
+    ports:
+      - "5439:5432"
+    networks:
+      - cinema-net
+    volumes:
+      - blockchain-data-c:/var/lib/postgresql/data
+
+  # =========================
+  # RabbitMQ (Message Broker)
+  # =========================
+  rabbitmq:
+    image: rabbitmq:3-management
+    container_name: rabbitmq
+    restart: unless-stopped
+    ports:
+      - "5672:5672"     # AMQP protocol
+      - "15672:15672"   # Web UI: http://localhost:15672
+    environment:
+      RABBITMQ_DEFAULT_USER: admin
+      RABBITMQ_DEFAULT_PASS: admin
+    networks:
+      - cinema-net
+
+# =========================
+# Networks & Volumes
+# =========================
+networks:
+  cinema-net:
+
+volumes:
+  blockchain-data-a:
+  blockchain-data-b:
+  blockchain-data-c:
